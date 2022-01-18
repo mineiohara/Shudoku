@@ -1,126 +1,220 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <time.h>
-#include <unistd.h>
+#include <math.h>
 
 #define N 9
+#define Whole 0
+#define M 3
+#define S 2
 
-int get_rand( int min_val, int max_val);
-void shuffle(int *array, int size);
-int isSafe(int grid[N][N], int row, int col, int num);
-void printer(int array[N][N]);
+struct Sudoku{
+    int grid[N][N];
+    int slonGrid[N][N];
+    int guessNum[N];
+    int gridPos[N*N];
+    int difficultyLevel;
+    bool gridStatus;
+};
+
+void initialize(struct Sudoku*);
+void printGrid(struct Sudoku*);
+void createSeed(struct Sudoku*);
+bool solveGrid(struct Sudoku*);
+bool FindUnassignedLocation(int [N][N], int*, int*);
+bool isSafe(int [N][N], int, int, int);
+bool usedInRow(int [N][N], int, int);
+bool usedInCol(int [N][N], int, int);
+bool usedInBox(int [N][N], int, int, int);
+void shuffle(int*, int);
+void genPuzzle(struct Sudoku*);
+void countSoln(struct Sudoku*, int*);
+
 
 int main(){
-    int temp[N*N];
-    int shudoku[N][N];
-    int i, j, check;
-    
-    for(i = 0; i < N; i++)
-    {
-        for(j = 0; j < N; j++)
-        {
-            temp[i*9+j] = j + 1;
-        }
-    }
+    struct Sudoku map;
 
-    while(1)
-    {
-        shuffle(temp, N*N);
+    initialize(&map);
+    createSeed(&map);
+    // printGrid(&map);
 
-
-        for(i = 0; i < N; i++)
-        {
-            for(j = 0; j < N; j++)
-            {
-                shudoku[i][j] = temp[i*9+j];
-            }
-        }
-
-        for(i = 1; i <= N; i++)
-        {
-            if(isSafe(shudoku, N, N, i) == 1)
-            {
-                check = 1;
-                break;
-            }
-        }
-        if(check == 1) 
-        {
-            printf("Fail\n");
-            check = 0;
-            printer(shudoku);
-            sleep(1);
-        }
-        else
-        {
-            printf("Pass!\n");
-            break;
-        }
-    }
+    genPuzzle(&map);
+    printGrid(&map);
 
     return 0;
 }
 
-int isSafe(int grid[N][N], int row, int col, int num)
-{
-    int i, j;
-    int startRow = row - row % 3;
-    int startCol = col - col % 3;
+void initialize(struct Sudoku* map){
+    printf("Initializing...\n");
 
-    for (i = 0; i <= 8; i++)
-        if (grid[row][i] == num) return 1;
-
-    for (i = 0; i <= 8; i++)
-        if (grid[i][col] == num) return 1;
-
-    for (i = 0; i < 3; i++)
-        for (j = 0; j < 3; j++)
-            if (grid[i + startRow][j + startCol] == num) return 1;
-
-    return 0;
-}
-
-int get_rand( int min_val, int max_val ) {
-    // srand((unsigned int)time(NULL));
-    srand(1);
-    return (int)( rand() / ( (double)RAND_MAX+1.0 ) * ( max_val+1 - min_val ) + min_val );
-}
-
-/* 要素数sizeの配列arrayの要素をシャッフルする関数 */
-void shuffle(int *array, int size)
-{
-    int i, r, temp;
+    int i, j, temp;
     srand((unsigned int)time(NULL));
+    
+    map->difficultyLevel = 0;
 
-    for (i = 0; i < size; i++) {
-        r = get_rand( i, size );
-        temp = array[i];
-        array[i] = array[r];
-        array[r] = temp;
+    for(i = 0; i < N*N; i++){
+        map->gridPos[i] = i;
     }
+
+    shuffle(map->gridPos, N*N);
+
+    for(i = 0; i < N; i++){
+        map->guessNum[i] = i + 1;
+    }
+
+    shuffle(map->guessNum, N);
+
+    for(i = 0; i < N; i++){
+        for(j = 0; j < N; j++){
+            map->grid[i][j] = Whole;
+        }
+    }
+
+    map->gridStatus = true;
 }
 
-// void shuffle(int array[]) {
-//     srand((unsigned int)time(NULL));
-//     for(int i = 0; i < N*N; i++)
-//     {
-//         int j = rand()%N*N;
-//         int t = array[i];
-//         array[i] = array[j];
-//         array[j] = t;
-//     }
-// }
-
-void printer(int array[N][N])
-{
+void printGrid(struct Sudoku* map){
+    printf("==========================\n");
+    printf("==========Sudoku==========\n\n");
     int i, j;
 
-    for(i = 0; i < N; i++)
-    {
-        for(j = 0; j < N; j++)
-        {
-            printf("%d ", array[i][j]);
+    for(i = 0; i < N; i++){
+        printf("   |");
+        for(j = 0; j < N; j++){
+            if(map->grid[i][j] == Whole) printf("*|");
+            else printf("%d|", map->grid[i][j]);
         }
         printf("\n");
+    }
+    printf("\n");
+}
+
+void createSeed(struct Sudoku* map){
+    printf("Generating solvable map...\n");
+    int i, j;
+    struct Sudoku* p = map;
+    
+    solveGrid(p);
+
+    for(i = 0; i < N; i++){
+        for(j = 0; j < N; j++){
+            map->slonGrid[i][j] = map->grid[i][j];
+        }
+    }
+}
+
+bool solveGrid(struct Sudoku* map){
+    int row, col, num;
+    struct Sudoku* p = map;
+
+    if(!FindUnassignedLocation(map->grid, &row, &col)) return true;
+
+    for(num = 0; num < N; num++){
+        if(isSafe(map->grid, row, col, map->guessNum[num])){
+            map->grid[row][col] = map->guessNum[num];
+            
+            if(solveGrid(p)) return true;
+
+            map->grid[row][col] = Whole;
+        }
+    }
+
+    return false;
+}
+
+bool FindUnassignedLocation(int grid[N][N], int* row, int* col){
+    for(*row = 0; *row < N; *(row)+=1){
+        for(*col = 0; *col < N; *(col)+=1){
+            if(grid[*row][*col] == Whole) return true;
+        }
+    }
+
+    return false;
+}
+
+bool isSafe(int grid[N][N], int row, int col, int num){
+    return !usedInRow(grid, row, num) && !usedInCol(grid, col, num) && !usedInBox(grid, row - row % 3, col - col % 3, num);
+}
+
+bool usedInRow(int grid[N][N], int row, int num){
+    int col;
+
+    for(col = 0; col < N; col++){
+        if(grid[row][col] == num) return true;
+    }
+
+    return false;
+}
+
+bool usedInCol(int grid[N][N], int col, int num){
+    int row;
+
+    for(row = 0; row < N; row++){
+        if(grid[row][col] == num) return true;
+    }
+
+    return false;
+}
+
+bool usedInBox(int grid[N][N], int srow, int scol, int num){
+    int row, col;
+
+    for(row = 0; row < M; row++){
+        for(col = 0; col < M; col++){
+            if(grid[row + srow][col + scol] == num) return true;
+        }
+    }
+
+    return false;
+}
+
+void shuffle(int *array, int n){
+    int i, j, temp;
+
+    srand((unsigned int)time(NULL));
+
+    for (i = 0; i < n - 1; i++){
+        j = i + rand() / (RAND_MAX / (n - i) + 1);
+        temp = array[j];
+        array[j] = array[i];
+        array[i] = temp;
+    }
+}
+
+void genPuzzle(struct Sudoku* map){
+    printf("Making wholes on map...\n");
+
+    int i, x, y, temp, check;
+    struct Sudoku* p = map;
+
+    for(i = 0; i < 81; i++){
+        x = map->gridPos[i] / N;
+        y = map->gridPos[i] % N;
+        temp = map->grid[x][y];
+        map->grid[x][y] = Whole;
+        check = 0;
+        countSoln(p, &check);
+        if(check != 1) map->grid[x][y] = temp;
+    }
+}
+
+void countSoln(struct Sudoku* map, int* num){
+    int row, col, i;
+    struct Sudoku* p = map;
+    int* pnum = num;
+
+    if(!FindUnassignedLocation(map->grid, &row, &col)){
+        *num+=1;
+        return;
+    }
+
+    for(i = 0; i < N && *num < S; i++){
+        if(isSafe(map->grid, row, col, map->guessNum[i])){
+            map->grid[row][col] = map->guessNum[i];
+            countSoln(p, pnum);
+        }
+
+        map->grid[row][col] = Whole;
     }
 }
