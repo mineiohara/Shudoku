@@ -4,7 +4,7 @@
 #include <time.h>
 #include <math.h>
 
-#define N 16
+#define N 9
 #define Whole 0
 #define M (int)sqrt(N)
 #define S M-1

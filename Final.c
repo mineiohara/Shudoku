@@ -4,7 +4,7 @@
 #include <time.h>
 #include <math.h>
 
-#define N 16
+#define N 81
 #define Whole 0
 #define M (int)sqrt(N)
 #define S M-1
@@ -55,19 +55,8 @@ int main(){
     //Solving process
     tic = clock();
 
-    int i, j;
     if( fillsudoku(map.grid, 0, 0) ){
-        for(i=0; i<N; ++i){
-            for(j=0; j<N; ++j){
-                printf("%d ", map.grid[i][j]);
-                
-                if(map.grid[i][j]<10) printf(" ");
-                if(j % M == S) printf("|");
-            }
-            printf("\n");
-            if(i % M == S) printf("----------------------------------------------------");
-            printf("\n");
-        }
+        printGrid(&map);
     }
     else printf("\n\nNO SOLUTION\n\n");
 
@@ -109,13 +98,24 @@ void initialize(struct Sudoku* map){
 void printGrid(struct Sudoku* map){
     printf("==========================\n");
     printf("==========Sudoku==========\n\n");
-    int i, j;
+    int i, j, k;
 
     for(i = 0; i < N; i++){
-        // printf("");
+        printf("|");
         for(j = 0; j < N; j++){
-            if(map->grid[i][j] == Whole) printf("  *");
+            if(map->grid[i][j] == Whole) {
+                if(j == 0 || (j+1) % M == 1) printf("*");
+                else printf("  *");
+            }
+            else if(j == 0 || (j+1) % M == 1) printf("%d", map->grid[i][j]);
             else printf("%3d", map->grid[i][j]);
+            if(j % M == S) printf("|");
+        }
+        printf("\n");
+        if(i % M == S){
+            for(k = 0; k < N*S; k++){
+                printf("-");
+            }
         }
         printf("\n");
     }
