@@ -55,9 +55,7 @@ int main(){
     //Solving process
     tic = clock();
 
-    if( fillsudoku(map.grid, 0, 0) ){
-        printGrid(&map);
-    }
+    if( fillsudoku(map.grid, 0, 0) ) printGrid(&map);
     else printf("\n\nNO SOLUTION\n\n");
 
     toc = clock();
