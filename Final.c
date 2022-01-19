@@ -14,8 +14,6 @@ struct Sudoku{
     int slonGrid[N][N];
     int guessNum[N];
     int gridPos[N*N];
-    int difficultyLevel;
-    bool gridStatus;
 };
 
 //Generator functions
@@ -69,8 +67,6 @@ void initialize(struct Sudoku* map){
 
     int i, j, temp;
     srand((unsigned int)time(NULL));
-    
-    map->difficultyLevel = 0;
 
     for(i = 0; i < N*N; i++){
         map->gridPos[i] = i;
@@ -89,8 +85,6 @@ void initialize(struct Sudoku* map){
             map->grid[i][j] = Whole;
         }
     }
-
-    map->gridStatus = true;
 }
 
 void printGrid(struct Sudoku* map){
