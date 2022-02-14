@@ -1,4 +1,4 @@
-#Sudoku
+# Sudoku
 Accelerate solving Shudoku with C using OpenMP, Pthread libraries.
 
 When compile:  
