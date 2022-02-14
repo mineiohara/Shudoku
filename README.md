@@ -1,4 +1,4 @@
-The project of accelerate solving Shudoku with C. Accelerate by OpenMP, Pthread.
+Accelerate solving Shudoku with C using OpenMP, Pthread libraries.
 
 When compile:  
 gcc sudoku.c -o [Excutable File Name] -pthread -fopenmp  
